@@ -1,0 +1,63 @@
+version: '3.4'
+services:
+  apache:
+    volumes:
+      - ./infrastructure/containers/apache/config/vhost:/etc/apache2/sites-enabled
+      - ./app:/var/www/app
+  php:
+    build:
+      target: development
+    volumes:
+      - ./app:/var/www/app
+    environment:
+      - APP_ENV=dev
+  symfony:
+    build:
+      context: ./
+      dockerfile: ./infrastructure/containers/php/Dockerfile
+      target: symfony
+    volumes:
+      - ./app:/var/www/app
+    container_name: symfony
+    environment:
+      - APP_ENV=dev
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    networks:
+      - app
+    volumes:
+      - /var/data/mysql:/var/lib/mysql
+    command:
+      - "--default-authentication-plugin=mysql_native_password"
+      - "--lower_case_table_names=1"
+    environment:
+      MYSQL_ROOT_PASSWORD: lgService
+      MYSQL_DATABASE: lgService
+      MYSQL_USER: lgService
+      MYSQL_PASSWORD: lgService
+    ports:
+      - 3306:3306
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - 8080:80
+    networks:
+      - app
+
+  maildev:
+    image: djfarrelly/maildev
+    container_name: maildev
+    ports:
+      - 8001:80
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
